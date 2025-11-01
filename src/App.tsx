@@ -279,9 +279,9 @@ function App() {
           options: qrOptions
         }
         
-        // Always return pure JSON in API mode
+        // Return minimal HTML with just the JSON for easier extraction
         document.open()
-        document.write(JSON.stringify(apiResponse, null, 2))
+        document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>QR API Response</title></head><body><script type="application/json" id="api-response">${JSON.stringify(apiResponse)}</script><pre>${JSON.stringify(apiResponse, null, 2)}</pre></body></html>`)
         document.close()
         
       } catch (error) {
@@ -294,9 +294,9 @@ function App() {
           message: error instanceof Error ? error.message : 'Unknown error'
         }
         
-        // Always return pure JSON in API mode
+        // Return minimal HTML with error JSON
         document.open()
-        document.write(JSON.stringify(errorResponse, null, 2))
+        document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>QR API Error</title></head><body><script type="application/json" id="api-response">${JSON.stringify(errorResponse)}</script><pre>${JSON.stringify(errorResponse, null, 2)}</pre></body></html>`)
         document.close()
       }
     }

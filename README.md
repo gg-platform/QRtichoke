@@ -82,25 +82,67 @@ The API returns pure JSON with the following structure:
 
 ### Integration Examples
 
-**JavaScript/Fetch:**
+**JavaScript/Fetch (Extract JSON from HTML):**
 ```javascript
 const response = await fetch('https://your-domain.com/?text=Hello%20World');
-const result = await response.json();
+const html = await response.text();
+
+// Method 1: Extract from script tag (cleanest)
+const scriptMatch = html.match(/<script type="application\/json" id="api-response">(.*?)<\/script>/);
+const result = JSON.parse(scriptMatch[1]);
+
+// Method 2: Extract from pre tag (fallback)
+// const preMatch = html.match(/<pre>(.*?)<\/pre>/s);
+// const result = JSON.parse(preMatch[1]);
+
 console.log(result.image); // Base64 image data
 ```
 
-**cURL:**
-```bash
-curl "https://your-domain.com/?text=Hello%20World"
+**JavaScript/Fetch (Using DOM Parser):**
+```javascript
+const response = await fetch('https://your-domain.com/?text=Hello%20World');
+const html = await response.text();
+const parser = new DOMParser();
+const doc = parser.parseFromString(html, 'text/html');
+const jsonScript = doc.getElementById('api-response');
+const result = JSON.parse(jsonScript.textContent);
+console.log(result.image); // Base64 image data
 ```
 
-**Python:**
+**cURL + jq (Extract JSON):**
+```bash
+curl -s "https://your-domain.com/?text=Hello%20World" | \
+  grep -o '<script type="application/json" id="api-response">.*</script>' | \
+  sed 's/<script[^>]*>//;s/<\/script>//' | \
+  jq '.image'
+```
+
+**Python (Extract JSON from HTML):**
 ```python
 import requests
+import re
+import json
 
 url = "https://your-domain.com/?text=Hello%20World"
 response = requests.get(url)
-result = response.json()
+
+# Extract JSON from script tag
+script_match = re.search(r'<script type="application/json" id="api-response">(.*?)</script>', response.text)
+result = json.loads(script_match.group(1))
+print(result['image'])  # Base64 image data
+```
+
+**Python with BeautifulSoup (Cleaner):**
+```python
+import requests
+import json
+from bs4 import BeautifulSoup
+
+url = "https://your-domain.com/?text=Hello%20World"
+response = requests.get(url)
+soup = BeautifulSoup(response.text, 'html.parser')
+json_script = soup.find('script', {'id': 'api-response'})
+result = json.loads(json_script.string)
 print(result['image'])  # Base64 image data
 ```
 
@@ -110,7 +152,8 @@ print(result['image'])  # Base64 image data
 - **Rate Limiting**: Built-in protection against abuse
 - **No Server Required**: Runs entirely in the browser via GitHub Pages
 - **URL Encoding**: Special characters must be URL-encoded
-- **Pure JSON**: Always returns clean JSON response for easy parsing
+- **HTML Wrapper**: JSON is embedded in minimal HTML for browser compatibility
+- **Easy Extraction**: JSON available in both script tag and formatted in pre tag
 
 ## 🔒 Security Features
 
