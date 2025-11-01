@@ -1,4 +1,4 @@
-import { useState, useEffect, useId } from 'react'
+import { useState, useEffect, useId, useCallback } from 'react'
 import { 
   Button, 
   Card, 
@@ -206,7 +206,7 @@ function App() {
     )
 
   // Sanitize input text to prevent XSS and other attacks
-  const sanitizeInput = (text: string): string => {
+  const sanitizeInput = useCallback((text: string): string => {
     // First, use DOMPurify to clean any HTML/script content
     const cleaned = DOMPurify.sanitize(text, { 
       ALLOWED_TAGS: [], // No HTML tags allowed
@@ -214,14 +214,25 @@ function App() {
       KEEP_CONTENT: true // Keep text content but remove tags
     })
     
-    // Remove any remaining potentially dangerous characters
-    return cleaned
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters except \t, \n, \r
-      .trim()
-  }
+    // Remove any remaining potentially dangerous characters using a safer approach
+    const cleanText = cleaned.split('').filter(char => {
+      const code = char.charCodeAt(0)
+      // Allow most characters but block dangerous control characters
+      // Keep: tab(9), newline(10), carriage return(13)
+      return !(
+        (code >= 0 && code <= 8) ||    // Block \0 to \b
+        (code === 11) ||               // Block \v (vertical tab)
+        (code === 12) ||               // Block \f (form feed)
+        (code >= 14 && code <= 31) ||  // Block \x0E to \x1F
+        (code === 127)                 // Block DEL
+      )
+    }).join('')
+    
+    return cleanText.trim()
+  }, [])
 
   // Enhanced input validation with security checks
-  const validateInput = (text: string): ValidationError | null => {
+  const validateInput = useCallback((text: string): ValidationError | null => {
     // Sanitize input first
     const sanitizedText = sanitizeInput(text)
     
@@ -252,9 +263,9 @@ function App() {
       /vbscript:/i,
       /<script/i,
       /on\w+\s*=/i, // Event handlers like onclick=
-      /\<iframe/i,
-      /\<object/i,
-      /\<embed/i
+      /<iframe/i,
+      /<object/i,
+      /<embed/i
     ]
     
     for (const pattern of dangerousPatterns) {
@@ -266,8 +277,12 @@ function App() {
       }
     }
     
-    // Check for excessive control characters
-    const controlCharCount = (sanitizedText.match(/[\x00-\x1F\x7F-\x9F]/g) || []).length
+    // Check for excessive control characters using a safer approach
+    const controlCharCount = sanitizedText.split('').filter(char => {
+      const code = char.charCodeAt(0)
+      return (code >= 0 && code <= 31) || (code >= 127 && code <= 159)
+    }).length
+    
     if (controlCharCount > 10) {
       return {
         message: 'Input contains too many control characters.',
@@ -283,7 +298,43 @@ function App() {
     }
     
     return null
-  }
+  }, [sanitizeInput])
+
+  const generateQRCode = useCallback(async () => {
+    try {
+      // Update rate limiting counters
+      const now = Date.now()
+      setLastGenerationTime(now)
+      setGenerationCount(prev => prev + 1)
+      
+      // Sanitize input before processing
+      const sanitizedText = sanitizeInput(inputText)
+      
+      const qrCodeOptions = {
+        errorCorrectionLevel: options.errorCorrectionLevel,
+        width: Math.min(Math.max(options.width, 128), 1024), // Constrain width for security
+        margin: Math.min(Math.max(options.margin, 0), 10), // Constrain margin
+        color: options.color,
+      }
+      
+      const dataUrl = await QRCode.toDataURL(sanitizedText, qrCodeOptions)
+      
+      // Validate generated data URL
+      if (!dataUrl.startsWith('data:image/png;base64,')) {
+        throw new Error('Invalid QR code format generated')
+      }
+      
+      setQrDataUrl(dataUrl)
+    } catch (error) {
+      // Log detailed error for debugging but show generic message to user
+      console.error('QR code generation failed:', error instanceof Error ? error.message : 'Unknown error')
+      setValidationError({
+        message: 'Failed to generate QR code. Please try with different text.',
+        type: 'error'
+      })
+      setQrDataUrl('') // Clear any existing QR code
+    }
+  }, [inputText, options, sanitizeInput])
 
   // Generate QR code whenever input text or options change
   useEffect(() => {
@@ -319,43 +370,7 @@ function App() {
     } else {
       setQrDataUrl('')
     }
-  }, [inputText, options])
-
-  const generateQRCode = async () => {
-    try {
-      // Update rate limiting counters
-      const now = Date.now()
-      setLastGenerationTime(now)
-      setGenerationCount(prev => prev + 1)
-      
-      // Sanitize input before processing
-      const sanitizedText = sanitizeInput(inputText)
-      
-      const qrCodeOptions = {
-        errorCorrectionLevel: options.errorCorrectionLevel,
-        width: Math.min(Math.max(options.width, 128), 1024), // Constrain width for security
-        margin: Math.min(Math.max(options.margin, 0), 10), // Constrain margin
-        color: options.color,
-      }
-      
-      const dataUrl = await QRCode.toDataURL(sanitizedText, qrCodeOptions)
-      
-      // Validate generated data URL
-      if (!dataUrl.startsWith('data:image/png;base64,')) {
-        throw new Error('Invalid QR code format generated')
-      }
-      
-      setQrDataUrl(dataUrl)
-    } catch (error) {
-      // Log detailed error for debugging but show generic message to user
-      console.error('QR code generation failed:', error instanceof Error ? error.message : 'Unknown error')
-      setValidationError({
-        message: 'Failed to generate QR code. Please try with different text.',
-        type: 'error'
-      })
-      setQrDataUrl('') // Clear any existing QR code
-    }
-  }
+  }, [inputText, options, validateInput, generateQRCode, lastGenerationTime, generationCount])
 
   const downloadQRCode = () => {
     if (!qrDataUrl || !qrDataUrl.startsWith('data:image/png;base64,')) {
