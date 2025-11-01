@@ -1,19 +1,19 @@
 {
   "name": "react-qr-code-generator",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Secure React QR Code Generator with advanced features and enterprise-grade security",
-  "keywords": ["qr-code", "generator", "react", "typescript", "security", "fluent-ui"],
-  "author": "Your Name",
+  "keywords": ["qr-code", "generator", "react", "typescript", "fluent-ui"],
+  "author": "gg-platform",
   "license": "MIT",
-  "homepage": "https://yourusername.github.io/react-qr-code-generator",
+  "homepage": "https://gg-platform.github.io/QRtichoke",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/react-qr-code-generator.git"
+    "url": "https://github.com/gg-platform/QRtichoke.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/react-qr-code-generator/issues"
+    "url": "https://github.com/gg-platform/QRtichoke/issues"
   },
   "scripts": {
     "dev": "vite",
@@ -26,6 +26,7 @@
     "deploy:preview": "npm run build && npm run preview",
     "deploy:netlify": "npm run build && netlify deploy --prod --dir=dist",
     "deploy:vercel": "npm run build && vercel --prod",
+    "deploy:github": "VITE_BASE_PATH=/QRtichoke/ npm run build",
     "clean": "rimraf dist"
   },
   "dependencies": {

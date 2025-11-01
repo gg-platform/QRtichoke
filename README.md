@@ -158,7 +158,7 @@ This project is configured for GitHub Pages deployment:
 4. Select "GitHub Actions" as source
 5. The workflow will automatically build and deploy
 
-The site will be available at: `https://yourusername.github.io/react_qr_code_generator`
+The site will be available at: `https://yourusername.github.io/QRtichoke`
 
 
 ## 🎯 Features in Detail

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - QR Code Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3A5233;
+        }
+        .container {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 3rem;
+            margin: 0 0 20px 0;
+            color: #FF7B54;
+        }
+        h2 {
+            font-size: 1.5rem;
+            margin: 0 0 20px 0;
+            color: #3A5233;
+        }
+        p {
+            line-height: 1.6;
+            margin: 20px 0;
+            color: #666;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #3A5233;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background-color 0.3s;
+            margin: 10px;
+        }
+        .btn:hover {
+            background-color: #4A6741;
+        }
+        .btn-secondary {
+            background-color: #FF7B54;
+        }
+        .btn-secondary:hover {
+            background-color: #FF8C69;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>404</h1>
+        <h2>Page Not Found</h2>
+        <p>The page you're looking for doesn't exist or has been moved.</p>
+        <p>Let's get you back to generating QR codes!</p>
+        
+        <a href="/QRtichoke/" class="btn">Go to QR Generator</a>
+        <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>
+    </div>
+
+    <script>
+        // Redirect to main app for SPA routing
+        if (window.location.pathname !== '/QRtichoke/') {
+            setTimeout(() => {
+                window.location.href = '/QRtichoke/';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
