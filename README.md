@@ -34,7 +34,7 @@ The QR Code Generator includes a **client-side URL-based API** that allows you t
 Generate QR codes by visiting URLs with the following format:
 
 ```
-https://your-domain.com/?text=Hello%20World&format=base64
+https://your-domain.com/?text=Hello%20World
 ```
 
 ### Supported URL Parameters
@@ -42,7 +42,6 @@ https://your-domain.com/?text=Hello%20World&format=base64
 | Parameter | Required | Description | Example |
 |-----------|----------|-------------|---------|
 | `text` | ✅ | Text to encode in the QR code | `text=Hello%20World` |
-| `format` | ✅ | Response format (must be `base64`) | `format=base64` |
 | `width` | ❌ | QR code width in pixels (128-1024) | `width=512` |
 | `error` | ❌ | Error correction level (L/M/Q/H) | `error=H` |
 | `fg` or `foreground` | ❌ | Foreground color (hex) | `fg=%23FF0000` |
@@ -52,17 +51,17 @@ https://your-domain.com/?text=Hello%20World&format=base64
 
 **Basic QR Code:**
 ```
-https://your-domain.com/?text=https://example.com&format=base64
+https://your-domain.com/?text=https://example.com
 ```
 
 **Custom Styled QR Code:**
 ```
-https://your-domain.com/?text=Hello%20World&format=base64&width=400&error=H&fg=%23000000&bg=%23FFFFFF
+https://your-domain.com/?text=Hello%20World&width=400&error=H&fg=%23000000&bg=%23FFFFFF
 ```
 
 ### API Response Format
 
-The API returns a JSON response with the following structure:
+The API returns pure JSON with the following structure:
 
 ```json
 {
@@ -85,17 +84,24 @@ The API returns a JSON response with the following structure:
 
 **JavaScript/Fetch:**
 ```javascript
-const response = await fetch('https://your-domain.com/?text=Hello%20World&format=base64');
-const html = await response.text();
-// Parse the JSON from the HTML response
-const jsonMatch = html.match(/<pre[^>]*>(.*?)<\/pre>/s);
-const result = JSON.parse(jsonMatch[1]);
+const response = await fetch('https://your-domain.com/?text=Hello%20World');
+const result = await response.json();
 console.log(result.image); // Base64 image data
 ```
 
 **cURL:**
 ```bash
-curl "https://your-domain.com/?text=Hello%20World&format=base64"
+curl "https://your-domain.com/?text=Hello%20World"
+```
+
+**Python:**
+```python
+import requests
+
+url = "https://your-domain.com/?text=Hello%20World"
+response = requests.get(url)
+result = response.json()
+print(result['image'])  # Base64 image data
 ```
 
 ### Security & Limitations
@@ -104,7 +110,7 @@ curl "https://your-domain.com/?text=Hello%20World&format=base64"
 - **Rate Limiting**: Built-in protection against abuse
 - **No Server Required**: Runs entirely in the browser via GitHub Pages
 - **URL Encoding**: Special characters must be URL-encoded
-- **Response Format**: HTML with embedded JSON (not pure JSON)
+- **Pure JSON**: Always returns clean JSON response for easy parsing
 
 ## 🔒 Security Features
 

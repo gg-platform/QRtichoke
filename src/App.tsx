@@ -239,14 +239,13 @@ function App() {
   const handleUrlParameters = useCallback(async () => {
     const urlParams = new URLSearchParams(window.location.search)
     const text = urlParams.get('text')
-    const format = urlParams.get('format')
     const width = urlParams.get('width')
     const errorLevel = urlParams.get('error')
     const foreground = urlParams.get('fg') || urlParams.get('foreground')
     const background = urlParams.get('bg') || urlParams.get('background')
     
-    // If URL parameters are present, switch to API mode
-    if (text && format === 'base64') {
+    // If text parameter is present, switch to API mode
+    if (text) {
       setApiMode(true)
       
       try {
@@ -272,39 +271,33 @@ function App() {
           color: qrOptions.color,
         })
         
-        // Return just the base64 data if requested
-        if (format === 'base64') {
-          // For API usage, you might want to return JSON
-          const apiResponse = {
-            success: true,
-            image: dataUrl,
-            input: sanitizedText,
-            options: qrOptions
-          }
-          
-          // Display the result on the page for API users
-          document.body.innerHTML = `
-            <pre style="font-family: monospace; padding: 20px; background: #f5f5f5; margin: 20px; border-radius: 8px;">
-${JSON.stringify(apiResponse, null, 2)}
-            </pre>
-          `
+        // Return base64 data in JSON format
+        const apiResponse = {
+          success: true,
+          image: dataUrl,
+          input: sanitizedText,
+          options: qrOptions
         }
+        
+        // Always return pure JSON in API mode
+        document.open()
+        document.write(JSON.stringify(apiResponse, null, 2))
+        document.close()
         
       } catch (error) {
         console.error('URL parameter QR generation failed:', error)
         
-        // Display error for API users
+        // Return JSON error response
         const errorResponse = {
           success: false,
           error: 'Failed to generate QR code',
           message: error instanceof Error ? error.message : 'Unknown error'
         }
         
-        document.body.innerHTML = `
-          <pre style="font-family: monospace; padding: 20px; background: #ffe6e6; margin: 20px; border-radius: 8px; color: #d00;">
-${JSON.stringify(errorResponse, null, 2)}
-          </pre>
-        `
+        // Always return pure JSON in API mode
+        document.open()
+        document.write(JSON.stringify(errorResponse, null, 2))
+        document.close()
       }
     }
   }, [sanitizeInput])
