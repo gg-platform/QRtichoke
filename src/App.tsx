@@ -26,6 +26,8 @@ import { ArrowDownload24Regular, QrCode24Regular, ErrorCircle24Regular, Copy24Re
 import { TinyColor } from '@ctrl/tinycolor'
 import DOMPurify from 'dompurify'
 import QRCode from 'qrcode'
+import SETTINGS from './Helpers/config'
+import { verboseLog } from './Helpers/helpers'
 import './App.css'
 
 // Define QR code options
@@ -214,7 +216,7 @@ function App() {
     return { h: hsv.h, s: hsv.s * 100, v: hsv.v * 100, a: hsv.a || 1 }
   })
   
-  // Rate limiting state
+  // Rate limiting state (used only when SETTINGS.ENABLE_RATE_LIMITING is true)
   const [lastGenerationTime, setLastGenerationTime] = useState(0)
   const [generationCount, setGenerationCount] = useState(0)
   
@@ -232,6 +234,15 @@ function App() {
       </Toast>,
       { position: "bottom-end", intent, timeout: 3000 }
     )
+
+  // Initialize app and log settings
+  useEffect(() => {
+    verboseLog('QR Code Generator App initialized', {
+      enableVerboseLogging: SETTINGS.ENABLE_VERBOSE_LOGGING,
+      enableRateLimiting: SETTINGS.ENABLE_RATE_LIMITING,
+      rateLimitMax: SETTINGS.RATE_LIMIT_MAX_REQUESTS_PER_MINUTE_WHEN_ENABLED
+    })
+  }, [])
 
   // Sanitize input text to prevent XSS and other attacks
   const sanitizeInput = useCallback((text: string): string => {
@@ -396,9 +407,12 @@ function App() {
   }, [sanitizeInput])
 
   const generateQRCode = useCallback(async () => {
+    verboseLog('Starting QR code generation', { inputText: inputText.substring(0, 50) + '...', options })
+    
     try {
       // Sanitize input before processing
       const sanitizedText = sanitizeInput(inputText)
+      verboseLog('Input sanitized', { originalLength: inputText.length, sanitizedLength: sanitizedText.length })
       
       const qrCodeOptions = {
         errorCorrectionLevel: options.errorCorrectionLevel,
@@ -406,6 +420,8 @@ function App() {
         margin: Math.min(Math.max(options.margin, 0), 10), // Constrain margin
         color: options.color,
       }
+      
+      verboseLog('QR code options prepared', qrCodeOptions)
       
       const dataUrl = await QRCode.toDataURL(sanitizedText, qrCodeOptions)
       
@@ -415,13 +431,25 @@ function App() {
       }
       
       setQrDataUrl(dataUrl)
+      verboseLog('QR code generated successfully', { dataUrlLength: dataUrl.length })
       
       // Update rate limiting counters only after successful generation
       const now = Date.now()
       setLastGenerationTime(now)
-      setGenerationCount(prev => prev + 1)
+      
+      if (SETTINGS.ENABLE_RATE_LIMITING) {
+        setGenerationCount(prev => prev + 1)
+        verboseLog('Rate limiting enabled - updated counters', { 
+          generationCount, 
+          enableRateLimiting: SETTINGS.ENABLE_RATE_LIMITING,
+          maxRequests: SETTINGS.RATE_LIMIT_MAX_REQUESTS_PER_MINUTE_WHEN_ENABLED
+        })
+      } else {
+        verboseLog('Rate limiting disabled - skipping counter update')
+      }
     } catch (error) {
       // Log detailed error for debugging but show generic message to user
+      verboseLog('QR code generation failed', error)
       console.error('QR code generation failed:', error instanceof Error ? error.message : 'Unknown error')
       setValidationError({
         message: 'Failed to generate QR code. Please try with different text.',
@@ -441,18 +469,29 @@ function App() {
       const timeoutId = setTimeout(() => {
         const now = Date.now()
         
-        // Reset counter if more than 1 minute has passed
-        if (lastGenerationTime === 0 || (now - lastGenerationTime) > 60000) {
-          setGenerationCount(0)
-        }
-        
-        // Check rate limits: max 100 generations per minute 
-        if (generationCount >= 100 && (now - lastGenerationTime) < 60000) {
-          setValidationError({
-            message: 'Rate limit exceeded. Please wait before generating more QR codes.',
-            type: 'warning'
-          })
-          return
+        // Only apply rate limiting if enabled in settings
+        if (SETTINGS.ENABLE_RATE_LIMITING) {
+          // Reset counter if more than 1 minute has passed
+          if (lastGenerationTime === 0 || (now - lastGenerationTime) > 60000) {
+            setGenerationCount(0)
+          }
+          
+          // Check rate limits using configurable max requests per minute
+          const maxRequests = SETTINGS.RATE_LIMIT_MAX_REQUESTS_PER_MINUTE_WHEN_ENABLED
+          if (generationCount >= maxRequests && (now - lastGenerationTime) < 60000) {
+            verboseLog('Rate limit exceeded', { 
+              generationCount, 
+              maxRequests, 
+              timeSinceLastGeneration: now - lastGenerationTime 
+            })
+            setValidationError({
+              message: `Rate limit exceeded. Please wait before generating more QR codes. (${maxRequests}/min)`,
+              type: 'warning'
+            })
+            return
+          }
+        } else {
+          verboseLog('Rate limiting disabled - proceeding without checks')
         }
         
         generateQRCode()
@@ -469,8 +508,16 @@ function App() {
     handleUrlParameters()
   }, [handleUrlParameters])
 
+  // Log when options change
+  useEffect(() => {
+    verboseLog('QR options updated', options)
+  }, [options])
+
   const downloadQRCode = () => {
+    verboseLog('Download QR code requested', { hasQrData: !!qrDataUrl })
+    
     if (!qrDataUrl || !qrDataUrl.startsWith('data:image/png;base64,')) {
+      verboseLog('Download failed: Invalid QR data')
       notify("Invalid QR code data", "error")
       return
     }
@@ -481,6 +528,8 @@ function App() {
       const timestamp = Date.now()
       const sanitizedFilename = `qr-code-${timestamp}.png`.replace(/[^a-zA-Z0-9.-]/g, '')
       
+      verboseLog('Preparing download', { filename: sanitizedFilename })
+      
       link.download = sanitizedFilename
       link.href = qrDataUrl
       link.style.display = 'none' // Hide the link
@@ -490,24 +539,32 @@ function App() {
       link.click()
       document.body.removeChild(link)
       
+      verboseLog('Download initiated successfully')
       notify("QR Code downloaded successfully")
     } catch (error) {
+      verboseLog('Download failed with error', error)
       console.error('Download failed:', error instanceof Error ? error.message : 'Unknown error')
       notify("Failed to download QR code", "error")
     }
   }
 
   const copyToClipboard = async () => {
+    verboseLog('Copy to clipboard requested', { hasQrData: !!qrDataUrl })
+    
     if (!qrDataUrl || !qrDataUrl.startsWith('data:image/png;base64,')) {
+      verboseLog('Copy failed: Invalid QR data')
       notify("Invalid QR code data", "error")
       return
     }
     
     // Check if clipboard API is available and secure context
     if (!navigator.clipboard || !window.isSecureContext) {
+      verboseLog('Copy failed: No clipboard access or insecure context')
       notify("Clipboard access requires HTTPS", "error")
       return
     }
+    
+    verboseLog('Attempting to copy QR code to clipboard')
     
     try {
       const response = await fetch(qrDataUrl)
@@ -526,19 +583,23 @@ function App() {
         new ClipboardItem({ 'image/png': blob })
       ])
       
+      verboseLog('QR code copied to clipboard successfully')
       notify("QR Code copied to clipboard")
     } catch (error) {
+      verboseLog('Clipboard copy failed, trying fallback', error)
       console.error('Clipboard copy failed:', error instanceof Error ? error.message : 'Unknown error')
       
       // Secure fallback - only copy if the data URL is valid
       try {
         if (qrDataUrl.startsWith('data:image/png;base64,')) {
           await navigator.clipboard.writeText(qrDataUrl)
+          verboseLog('Fallback copy (data URL) successful')
           notify("QR Code data copied to clipboard")
         } else {
           throw new Error('Invalid data format')
         }
       } catch (fallbackError) {
+        verboseLog('Fallback copy also failed', fallbackError)
         console.error('Fallback copy failed:', fallbackError instanceof Error ? fallbackError.message : 'Unknown error')
         notify("Failed to copy to clipboard", "error")
       }
