@@ -19,7 +19,7 @@ The repository includes a GitHub Actions workflow that automatically deploys to 
 
 **Setup Steps:**
 
-1. **Enable GitHub Pages**
+1. **Enable GitHub Pages** 
    - [ ] Go to your repository settings
    - [ ] Navigate to "Pages" section
    - [ ] Under "Source", select "GitHub Actions"
