@@ -160,6 +160,30 @@ const useStyles = makeStyles({
     gap: '10px',
     justifyContent: 'flex-end',
   },
+  footer: {
+    marginTop: 'auto',
+    padding: '20px',
+    borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
+    backgroundColor: tokens.colorNeutralBackground2,
+    textAlign: 'center',
+    color: tokens.colorNeutralForeground3,
+  },
+  footerContent: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '16px',
+    flexWrap: 'wrap',
+    fontSize: '14px',
+  },
+  footerLink: {
+    color: '#3A5233',
+    textDecoration: 'none',
+    fontWeight: '500',
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
 })
 
 function App() {
@@ -796,6 +820,33 @@ function App() {
           </Card>
         </div>
       </div>
+      
+      {/* Footer */}
+      <footer className={styles.footer}>
+        <div className={styles.footerContent}>
+          <Text size={300}>
+            QRtichoke v{__APP_VERSION__}
+          </Text>
+          <Text size={300}>•</Text>
+          <a 
+            href="https://www.gotgreens.farm/broadfork" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={styles.footerLink}
+          >
+            Got Greens 🤝 Broadfork
+          </a>
+          <Text size={300}>•</Text>
+          <a 
+            href="https://github.com/gg-platform/QRtichoke" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={styles.footerLink}
+          >
+            GitHub
+          </a>
+        </div>
+      </footer>
       
       <Toaster
         toasterId={toasterId}
