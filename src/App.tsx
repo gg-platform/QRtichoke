@@ -193,6 +193,10 @@ function App() {
   // Rate limiting state
   const [lastGenerationTime, setLastGenerationTime] = useState(0)
   const [generationCount, setGenerationCount] = useState(0)
+  
+  // API mode state
+  const [apiMode, setApiMode] = useState(false)
+  
   const styles = useStyles()
   const toasterId = useId()
   const { dispatchToast } = useToastController(toasterId)
@@ -230,6 +234,80 @@ function App() {
     
     return cleanText.trim()
   }, [])
+
+  // Handle URL parameters for API mode
+  const handleUrlParameters = useCallback(async () => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const text = urlParams.get('text')
+    const format = urlParams.get('format')
+    const width = urlParams.get('width')
+    const errorLevel = urlParams.get('error')
+    const foreground = urlParams.get('fg') || urlParams.get('foreground')
+    const background = urlParams.get('bg') || urlParams.get('background')
+    
+    // If URL parameters are present, switch to API mode
+    if (text && format === 'base64') {
+      setApiMode(true)
+      
+      try {
+        // Sanitize the input text
+        const sanitizedText = sanitizeInput(text)
+        
+        // Build options from URL parameters
+        const qrOptions: QROptions = {
+          errorCorrectionLevel: (errorLevel as 'L' | 'M' | 'Q' | 'H') || 'H',
+          width: width ? Math.min(Math.max(parseInt(width), 128), 1024) : 256,
+          margin: 4,
+          color: {
+            dark: foreground || '#3A5233',
+            light: background || '#FFFFFF'
+          }
+        }
+        
+        // Generate QR code
+        const dataUrl = await QRCode.toDataURL(sanitizedText, {
+          errorCorrectionLevel: qrOptions.errorCorrectionLevel,
+          width: qrOptions.width,
+          margin: qrOptions.margin,
+          color: qrOptions.color,
+        })
+        
+        // Return just the base64 data if requested
+        if (format === 'base64') {
+          // For API usage, you might want to return JSON
+          const apiResponse = {
+            success: true,
+            image: dataUrl,
+            input: sanitizedText,
+            options: qrOptions
+          }
+          
+          // Display the result on the page for API users
+          document.body.innerHTML = `
+            <pre style="font-family: monospace; padding: 20px; background: #f5f5f5; margin: 20px; border-radius: 8px;">
+${JSON.stringify(apiResponse, null, 2)}
+            </pre>
+          `
+        }
+        
+      } catch (error) {
+        console.error('URL parameter QR generation failed:', error)
+        
+        // Display error for API users
+        const errorResponse = {
+          success: false,
+          error: 'Failed to generate QR code',
+          message: error instanceof Error ? error.message : 'Unknown error'
+        }
+        
+        document.body.innerHTML = `
+          <pre style="font-family: monospace; padding: 20px; background: #ffe6e6; margin: 20px; border-radius: 8px; color: #d00;">
+${JSON.stringify(errorResponse, null, 2)}
+          </pre>
+        `
+      }
+    }
+  }, [sanitizeInput])
 
   // Enhanced input validation with security checks
   const validateInput = useCallback((text: string): ValidationError | null => {
@@ -369,6 +447,11 @@ function App() {
     }
   }, [inputText, options, validateInput, generateQRCode, generationCount, lastGenerationTime])
 
+  // Check URL parameters on component mount for API mode
+  useEffect(() => {
+    handleUrlParameters()
+  }, [handleUrlParameters])
+
   const downloadQRCode = () => {
     if (!qrDataUrl || !qrDataUrl.startsWith('data:image/png;base64,')) {
       notify("Invalid QR code data", "error")
@@ -443,6 +526,11 @@ function App() {
         notify("Failed to copy to clipboard", "error")
       }
     }
+  }
+
+  // If in API mode, don't render the normal UI (it will be replaced by API result)
+  if (apiMode) {
+    return <div>Loading API result...</div>
   }
 
   return (

@@ -23,6 +23,88 @@ A modern, secure, responsive QR code generator built with React 19, TypeScript, 
 - **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
 - **Accessibility**: Full keyboard navigation and screen reader support
 - **Modern UI**: Built with Fluent UI React v9 components
+- **URL-Based API**: Generate QR codes via URL parameters for integration
+
+## 🔗 URL-Based API
+
+The QR Code Generator includes a **client-side URL-based API** that allows you to generate QR codes by visiting URLs with specific parameters. This works entirely in the browser without requiring a backend server.
+
+### API Usage
+
+Generate QR codes by visiting URLs with the following format:
+
+```
+https://your-domain.com/?text=Hello%20World&format=base64
+```
+
+### Supported URL Parameters
+
+| Parameter | Required | Description | Example |
+|-----------|----------|-------------|---------|
+| `text` | ✅ | Text to encode in the QR code | `text=Hello%20World` |
+| `format` | ✅ | Response format (must be `base64`) | `format=base64` |
+| `width` | ❌ | QR code width in pixels (128-1024) | `width=512` |
+| `error` | ❌ | Error correction level (L/M/Q/H) | `error=H` |
+| `fg` or `foreground` | ❌ | Foreground color (hex) | `fg=%23FF0000` |
+| `bg` or `background` | ❌ | Background color (hex) | `bg=%23FFFFFF` |
+
+### Example API Calls
+
+**Basic QR Code:**
+```
+https://your-domain.com/?text=https://example.com&format=base64
+```
+
+**Custom Styled QR Code:**
+```
+https://your-domain.com/?text=Hello%20World&format=base64&width=400&error=H&fg=%23000000&bg=%23FFFFFF
+```
+
+### API Response Format
+
+The API returns a JSON response with the following structure:
+
+```json
+{
+  "success": true,
+  "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+  "input": "Hello World",
+  "options": {
+    "errorCorrectionLevel": "H",
+    "width": 256,
+    "margin": 4,
+    "color": {
+      "dark": "#000000",
+      "light": "#FFFFFF"
+    }
+  }
+}
+```
+
+### Integration Examples
+
+**JavaScript/Fetch:**
+```javascript
+const response = await fetch('https://your-domain.com/?text=Hello%20World&format=base64');
+const html = await response.text();
+// Parse the JSON from the HTML response
+const jsonMatch = html.match(/<pre[^>]*>(.*?)<\/pre>/s);
+const result = JSON.parse(jsonMatch[1]);
+console.log(result.image); // Base64 image data
+```
+
+**cURL:**
+```bash
+curl "https://your-domain.com/?text=Hello%20World&format=base64"
+```
+
+### Security & Limitations
+
+- **Input Sanitization**: All URL parameters are automatically sanitized
+- **Rate Limiting**: Built-in protection against abuse
+- **No Server Required**: Runs entirely in the browser via GitHub Pages
+- **URL Encoding**: Special characters must be URL-encoded
+- **Response Format**: HTML with embedded JSON (not pure JSON)
 
 ## 🔒 Security Features
 
