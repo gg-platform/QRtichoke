@@ -367,7 +367,7 @@ function App() {
     } else {
       setQrDataUrl('')
     }
-  }, [inputText, options]) // Simplified dependencies
+  }, [inputText, options, validateInput, generateQRCode, generationCount, lastGenerationTime])
 
   const downloadQRCode = () => {
     if (!qrDataUrl || !qrDataUrl.startsWith('data:image/png;base64,')) {
