@@ -446,8 +446,8 @@ function App() {
           setGenerationCount(0)
         }
         
-        // Check rate limits: max 50 generations per minute (more generous)
-        if (generationCount >= 50 && (now - lastGenerationTime) < 60000) {
+        // Check rate limits: max 100 generations per minute 
+        if (generationCount >= 100 && (now - lastGenerationTime) < 60000) {
           setValidationError({
             message: 'Rate limit exceeded. Please wait before generating more QR codes.',
             type: 'warning'
@@ -456,7 +456,7 @@ function App() {
         }
         
         generateQRCode()
-      }, 300) // 300ms debounce
+      }, 500) // 300ms debounce
       
       return () => clearTimeout(timeoutId)
     } else {
@@ -555,7 +555,7 @@ function App() {
       <div className={styles.header}>
         <Text as="h1" size={900} weight="bold" style={{ color: '#3A5233' }}>
           <QrCode24Regular style={{ marginRight: '8px' }} />
-          QR Code Generator
+          QRtichoke - a QR Code Generator
         </Text>
         <br />
         <Text as="p" size={400} style={{ marginTop: '16px', color: '#4A6741' }}>
