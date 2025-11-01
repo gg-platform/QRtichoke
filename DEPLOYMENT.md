@@ -1,7 +1,7 @@
 # Deployment Checklist
 
 ## Pre-Deployment
-
+- [ ] Ensure Node.js 20.19+ or 22.12+ is installed (required for Vite 7)
 - [ ] Run security audit: `npm run security:check`
 - [ ] Fix any vulnerabilities: `npm run audit:fix`
 - [ ] Run linting: `npm run lint`

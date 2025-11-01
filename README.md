@@ -65,7 +65,7 @@ A modern, secure, responsive QR code generator built with React 19, TypeScript, 
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 20.19+ or 22.12+ (required for Vite 7) 
 - npm or yarn
 
 ### Installation
