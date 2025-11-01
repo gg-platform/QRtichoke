@@ -302,11 +302,6 @@ function App() {
 
   const generateQRCode = useCallback(async () => {
     try {
-      // Update rate limiting counters
-      const now = Date.now()
-      setLastGenerationTime(now)
-      setGenerationCount(prev => prev + 1)
-      
       // Sanitize input before processing
       const sanitizedText = sanitizeInput(inputText)
       
@@ -325,6 +320,11 @@ function App() {
       }
       
       setQrDataUrl(dataUrl)
+      
+      // Update rate limiting counters only after successful generation
+      const now = Date.now()
+      setLastGenerationTime(now)
+      setGenerationCount(prev => prev + 1)
     } catch (error) {
       // Log detailed error for debugging but show generic message to user
       console.error('QR code generation failed:', error instanceof Error ? error.message : 'Unknown error')
@@ -336,41 +336,38 @@ function App() {
     }
   }, [inputText, options, sanitizeInput])
 
-  // Generate QR code whenever input text or options change
+  // Generate QR code whenever input text or options change (with debouncing)
   useEffect(() => {
     const error = validateInput(inputText)
     setValidationError(error)
     
     if (inputText.trim() && (!error || error.type === 'warning')) {
-      // Implement rate limiting
-      const now = Date.now()
-      const timeSinceLastGeneration = now - lastGenerationTime
+      // Simple debouncing instead of complex rate limiting
+      const timeoutId = setTimeout(() => {
+        const now = Date.now()
+        
+        // Reset counter if more than 1 minute has passed
+        if (lastGenerationTime === 0 || (now - lastGenerationTime) > 60000) {
+          setGenerationCount(0)
+        }
+        
+        // Check rate limits: max 50 generations per minute (more generous)
+        if (generationCount >= 50 && (now - lastGenerationTime) < 60000) {
+          setValidationError({
+            message: 'Rate limit exceeded. Please wait before generating more QR codes.',
+            type: 'warning'
+          })
+          return
+        }
+        
+        generateQRCode()
+      }, 300) // 300ms debounce
       
-      // Reset count if more than 1 minute has passed
-      if (timeSinceLastGeneration > 60000) {
-        setGenerationCount(0)
-      }
-      
-      // Check rate limits: max 30 generations per minute
-      if (generationCount >= 30 && timeSinceLastGeneration < 60000) {
-        setValidationError({
-          message: 'Rate limit exceeded. Please wait before generating more QR codes.',
-          type: 'warning'
-        })
-        return
-      }
-      
-      // Check minimum interval: 100ms between generations
-      if (timeSinceLastGeneration < 100) {
-        setTimeout(() => generateQRCode(), 100 - timeSinceLastGeneration)
-        return
-      }
-      
-      generateQRCode()
+      return () => clearTimeout(timeoutId)
     } else {
       setQrDataUrl('')
     }
-  }, [inputText, options, validateInput, generateQRCode, lastGenerationTime, generationCount])
+  }, [inputText, options]) // Simplified dependencies
 
   const downloadQRCode = () => {
     if (!qrDataUrl || !qrDataUrl.startsWith('data:image/png;base64,')) {
